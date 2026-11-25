@@ -31,6 +31,29 @@ The instructions open next to the baseplate, or above it on a phone. Turning the
 
 You can also drop PDFs anywhere on the home screen to open the import window.
 
+### Build from a Photo
+
+Turn any picture into a brick mosaic and build it step by step.
+
+1. Click **Build from a Photo** and choose a picture, or drop one on the home screen.
+2. Choose the options. The preview updates as you go:
+   - **Size:** 16×16, 32×32, 48×48, or **Fit picture** (keeps the picture's shape, up to 48 studs)
+   - **Parts:** round tiles (like the official art sets), square tiles, or plates
+   - **Bigger parts:** areas of the same color are covered with larger tiles or plates (up to 2×8), so you need fewer parts
+   - **Colors:** all 33 solid colors, or a limit of 24, 16, 12, 8, 4 or 2, chosen from the colors your picture uses most
+   - **Dithering:** mixes neighboring colors to suggest shades the palette doesn't have
+3. Click **Create build**.
+
+How the guided build works:
+- The picture is split into 16×16 sections, built 4 rows at a time.
+- For each step, the panel shows where the step goes, the original picture, and the parts you need with a count for each.
+- See-through outlines on the board show where every part goes, and the camera moves to each step.
+- Tap a part in the list to select it with the right color and rotation, then place it on its outline.
+- A step completes by itself once all its parts are in place, and the next step starts.
+- **Place for me** fills in the current step.
+
+How the conversion works: the picture is center-cropped and each stud's area is averaged, mixing in linear light. Every stud then gets the nearest brick color, compared in CIELAB color space, which measures color difference the way the eye sees it.
+
 ### Free Build
 
 An empty 48×48 baseplate with the full parts catalog.
@@ -48,7 +71,7 @@ Free Build gives you an **unlimited supply of every part**, in the official size
 | Slopes (21) | 45° 2×1, 2×2, 2×3, 2×4 · 33° 3×1, 3×2, 3×3, 3×4 · 18° 4×1, 4×2 · 65° 2×1×2, 2×2×2 · 75° 2×1×3, 2×2×3 · 30° 1×1 (cheese), 1×2 · inverted 45° 2×1, 2×2 · inverted 33° 3×1, 3×2 · inverted 75° 2×1×3 |
 | Round (15) | round brick 1×1, 2×2, 4×4 · round plate 1×1, 2×2, 4×4, 6×6, 8×8 · round tile 1×1, 2×2, 3×3, 4×4 · cone 1×1, 2×2×2, 4×4×2 |
 
-All parts come in 23 colors, including 3 transparent ones, and rotate in four directions. To find a part quickly, type a size such as `2x4` or a name such as `cone` in the palette filter. The filter searches every category.
+All parts come in 36 colors, including 3 transparent ones, and rotate in four directions. To find a part quickly, type a size such as `2x4` or a name such as `cone` in the palette filter. The filter searches every category.
 
 ## Controls
 
@@ -62,7 +85,9 @@ All parts come in 23 colors, including 3 transparent ones, and rotate in four di
 | Undo / redo | `⌘Z` / `⇧⌘Z` | Top bar |
 | Instruction pages | `←` `→` | Swipe |
 | Clear the part filter | `Esc` | Clear button |
-| Show or hide instructions | `I` | Book button |
+| Show or hide instructions or steps | `I` | Book button |
+| Next / previous step (photo builds) | `→` `←` | Step arrows |
+| Top view of the whole board | `T` | Grid button |
 
 ## Saving and sharing
 
@@ -89,6 +114,9 @@ src/
   main.ts          hash router (#/ = home, #/build/<id> = builder)
   home.ts          home screen, project list, build-file import
   importDialog.ts  set number lookup and multi-booklet PDF import
+  mosaicDialog.ts  "Build from a Photo" window with live preview
+  mosaic.ts        picture to mosaic: sampling, color matching, dithering, parts, steps
+  guidePanel.ts    guided steps panel: outlines, parts per step, progress
   builderView.ts   builder screen: toolbar, palette, instructions panel
   builder.ts       Three.js scene, isometric camera, stud-grid placement, undo/redo
   bricks.ts        parts catalog, colors, part geometry

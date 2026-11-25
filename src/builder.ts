@@ -33,6 +33,9 @@ export class Builder {
   private baseplate: THREE.Mesh;
   private ghost: THREE.Mesh;
   private ghostMat = new THREE.MeshStandardMaterial({ transparent: true, opacity: 0.5, depthWrite: false });
+  /** See-through outlines of parts the current guided step asks for. */
+  private guide = new THREE.Group();
+  private guideMats = new Map<string, THREE.MeshStandardMaterial>();
   private meshes = new Map<number, THREE.Mesh>();
   private occupancy = new Map<string, number>();
   private bricks = new Map<number, PlacedBrick>();
@@ -67,7 +70,7 @@ export class Builder {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.minPolarAngle = 0.25;
+    this.controls.minPolarAngle = 0.01;
     this.controls.maxPolarAngle = 1.35;
     this.controls.minZoom = 0.3;
     this.controls.maxZoom = 6;
@@ -90,6 +93,7 @@ export class Builder {
     this.ghost.visible = false;
     this.ghost.renderOrder = 10;
     this.scene.add(this.ghost);
+    this.scene.add(this.guide);
 
     const el = this.renderer.domElement;
     el.addEventListener('pointerdown', this.onPointerDown);
@@ -186,6 +190,28 @@ export class Builder {
     const offset = this.camera.position.clone().sub(this.controls.target);
     offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), (steps * Math.PI) / 4);
     this.camera.position.copy(this.controls.target).add(offset);
+    this.camera.lookAt(this.controls.target);
+    this.needsRender = true;
+  }
+
+  /** Straight down, with the far edge of the plate at the top: how a mosaic is meant to be seen. */
+  topView() {
+    this.controls.target.set(0, 0, 0);
+    this.camera.position.setFromSphericalCoords(120, 0.01, 0);
+    this.camera.zoom = this.viewSize / (PLATE_SIZE + 2); // whole board in view
+    this.camera.updateProjectionMatrix();
+    this.camera.lookAt(0, 0, 0);
+    this.needsRender = true;
+  }
+
+  /** Pans and zooms to a grid area (min corner inclusive, max exclusive), keeping the view angle. */
+  focusArea(minX: number, minZ: number, maxX: number, maxZ: number) {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    this.controls.target.set((minX + maxX) / 2 - HALF, 0, (minZ + maxZ) / 2 - HALF);
+    this.camera.position.copy(this.controls.target).add(offset);
+    const span = Math.max(maxX - minX, maxZ - minZ) + 10;
+    this.camera.zoom = THREE.MathUtils.clamp(this.viewSize / span, this.controls.minZoom, this.controls.maxZoom);
+    this.camera.updateProjectionMatrix();
     this.camera.lookAt(this.controls.target);
     this.needsRender = true;
   }
@@ -353,6 +379,35 @@ export class Builder {
     this.restore(next);
   }
 
+  /** Places a batch of parts as one undoable action; parts that don't fit are skipped. */
+  placeMany(list: PlacedBrick[]): number {
+    const fitting = list.filter((b) => this.fits(b));
+    if (!fitting.length) return 0;
+    this.commit();
+    for (const b of fitting) if (this.fits(b)) this.addBrick({ ...b, id: this.nextId++ });
+    this.changed();
+    return fitting.length;
+  }
+
+  /** Shows translucent outlines for the given parts (pass [] to clear). */
+  setGuide(list: PlacedBrick[]) {
+    this.guide.clear();
+    for (const b of list) {
+      const t = TYPE_BY_ID.get(b.t);
+      if (!t) continue;
+      let mat = this.guideMats.get(b.c);
+      if (!mat) {
+        mat = new THREE.MeshStandardMaterial({ color: brickMaterial(b.c).color, transparent: true, opacity: 0.62, depthWrite: false });
+        this.guideMats.set(b.c, mat);
+      }
+      const mesh = new THREE.Mesh(brickGeometry(t), mat);
+      mesh.raycast = () => {};
+      this.placeMesh(mesh, b);
+      this.guide.add(mesh);
+    }
+    this.needsRender = true;
+  }
+
   clear() {
     if (!this.bricks.size) return;
     this.commit();
@@ -375,6 +430,11 @@ export class Builder {
   setBrush(typeId: string, colorId: string) {
     this.typeId = typeId;
     this.colorId = colorId;
+    this.refreshGhost();
+  }
+
+  setRotation(r: Rotation) {
+    this.rotated = r;
     this.refreshGhost();
   }
 

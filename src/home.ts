@@ -1,5 +1,6 @@
 import { type PlacedBrick, TYPE_BY_ID, COLOR_BY_ID } from './bricks';
 import { INSTRUCTIONS_URL, isPdf, openImportDialog } from './importDialog';
+import { openMosaicDialog } from './mosaicDialog';
 import { type Project, deleteProject, listProjects, newId, saveProject } from './storage';
 import { h, icon, iconButton, timeAgo, toast } from './ui';
 import logoUrl from '../public/icon.svg?url';
@@ -39,14 +40,19 @@ async function importBuildFile(file: File) {
 async function importFiles(files: File[]) {
   const pdfs = files.filter(isPdf);
   const json = files.find((f) => f.name.toLowerCase().endsWith('.json'));
-  if (pdfs.length) {
+  const image = files.find((f) => f.type.startsWith('image/'));
+  if (image && !pdfs.length) {
+    const id = await openMosaicDialog(image);
+    if (id) go(id);
+  } else if (pdfs.length) {
     const id = await openImportDialog(pdfs);
     if (id) go(id);
   } else if (json) await importBuildFile(json);
-  else if (files.length) toast('Drop instruction PDFs or a .brickbuild.json file');
+  else if (files.length) toast('Drop a picture, instruction PDFs or a .brickbuild.json file');
 }
 
 function progressText(p: Project): string {
+  if (p.mode === 'mosaic') return ` · step ${(p.step ?? 0) + 1}/${p.steps?.length ?? 0}`;
   if (p.mode !== 'instructions') return '';
   const books = p.booklets?.length ?? 1;
   const book = books > 1 ? `book ${(p.booklet ?? 0) + 1}/${books}, ` : '';
@@ -74,6 +80,20 @@ export async function renderHome(app: HTMLElement): Promise<() => void> {
     h('h2', {}, 'Build a Set'),
     h('p', {}, 'Import the official instruction PDFs for a set and rebuild it page by page.'),
     h('span', { class: 'mode-cta' }, icon('import'), 'Import instructions'),
+  );
+  const photoCard = h(
+    'button',
+    {
+      class: 'mode-card mode-photo',
+      onclick: (async () => {
+        const id = await openMosaicDialog();
+        if (id) go(id);
+      }) as EventListener,
+    },
+    h('div', { class: 'mode-art' }, icon('photo')),
+    h('h2', {}, 'Build from a Photo'),
+    h('p', {}, 'Turn any picture into a brick mosaic, then build it step by step with a parts list for every step.'),
+    h('span', { class: 'mode-cta' }, icon('upload'), 'Choose a picture'),
   );
   const freeCard = h(
     'button',
@@ -113,7 +133,7 @@ export async function renderHome(app: HTMLElement): Promise<() => void> {
             h(
               'div',
               { class: 'project-meta' },
-              h('span', { class: `badge badge-${p.mode}` }, p.mode === 'free' ? 'Free Build' : p.setNumber ? `Set ${p.setNumber}` : 'Set'),
+              h('span', { class: `badge badge-${p.mode}` }, p.mode === 'free' ? 'Free Build' : p.mode === 'mosaic' ? 'Photo' : p.setNumber ? `Set ${p.setNumber}` : 'Set'),
               h('h3', {}, p.name),
               h('p', {}, `${n} brick${n === 1 ? '' : 's'}${progressText(p)} · ${timeAgo(p.updatedAt)}`),
             ),
@@ -139,7 +159,7 @@ export async function renderHome(app: HTMLElement): Promise<() => void> {
       'main',
       { class: 'home' },
       h('header', { class: 'hero' }, h('img', { src: logoUrl, alt: '', class: 'logo' }), h('h1', {}, 'Brick Builder')),
-      h('section', { class: 'modes' }, setCard, freeCard),
+      h('section', { class: 'modes' }, setCard, photoCard, freeCard),
       h(
         'p',
         { class: 'hint' },

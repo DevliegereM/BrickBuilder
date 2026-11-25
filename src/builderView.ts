@@ -1,5 +1,6 @@
 import { BRICK_TYPES, CATEGORIES, COLORS, COLOR_BY_ID, type Category, TYPE_BY_ID } from './bricks';
 import { Builder, type Tool } from './builder';
+import { createGuidePanel } from './guidePanel';
 import { readBooklets, setUrl } from './importDialog';
 import { partIcons } from './partIcons';
 import type { PdfViewer } from './pdfViewer';
@@ -34,10 +35,12 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
 
   const updateCount = () => (countEl.textContent = `${builder.count} brick${builder.count === 1 ? '' : 's'}`);
 
+  let guide: ReturnType<typeof createGuidePanel> | null = null;
   const builder = new Builder(stage, {
     onChange: () => {
       updateCount();
       scheduleSave();
+      guide?.refresh();
     },
     onPick: (t, c) => {
       selectType(t);
@@ -88,6 +91,7 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
     iconButton('rotR', 'Rotate view right (E)', () => builder.rotateView(1)),
     iconButton('plus', 'Zoom in', () => builder.zoom(1.25)),
     iconButton('minus', 'Zoom out', () => builder.zoom(0.8)),
+    iconButton('top', 'Top view (T)', () => builder.topView()),
     iconButton('home', 'Reset view', () => builder.resetView()),
   );
   stage.append(toolbar, viewControls, countEl);
@@ -331,6 +335,22 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
     else scroller.append(h('p', { class: 'empty' }, 'No instruction PDF yet. Use ••• › Add booklet.'));
   }
 
+  if (project.mode === 'mosaic') {
+    guide = createGuidePanel(project, builder, {
+      save: scheduleSave,
+      selectPart: (t, c, r) => {
+        selectType(t);
+        selectColor(c);
+        builder.setRotation(r);
+        setTool('build');
+      },
+    });
+    pdfPanel = guide.el;
+    work.append(guide.el);
+    builder.topView();
+    guide.focus();
+  }
+
   const togglePdf = () => {
     if (pdfPanel) work.classList.toggle('pdf-hidden');
   };
@@ -363,6 +383,7 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
     undoBtn,
     redoBtn,
     project.mode === 'instructions' ? iconButton('book', 'Show/hide instructions (I)', togglePdf) : null,
+    project.mode === 'mosaic' ? iconButton('book', 'Show/hide steps (I)', togglePdf) : null,
     iconButton('list', 'Parts list', openPartsList, 'hide-sm'),
     menu,
   );
@@ -403,6 +424,9 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
     else if (k === 'q') builder.rotateView(-1);
     else if (k === 'e') builder.rotateView(1);
     else if (k === 'i') togglePdf();
+    else if (k === 't') builder.topView();
+    else if (e.key === 'ArrowRight' && guide) guide.next();
+    else if (e.key === 'ArrowLeft' && guide) guide.prev();
     else if (e.key === 'ArrowRight' && viewer) (pdfPanel?.querySelector('[aria-label^="Next"]') as HTMLButtonElement | null)?.click();
     else if (e.key === 'ArrowLeft' && viewer) (pdfPanel?.querySelector('[aria-label^="Previous"]') as HTMLButtonElement | null)?.click();
     else return;

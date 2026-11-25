@@ -1,7 +1,7 @@
 import { createStore, del, get, keys, set } from 'idb-keyval';
 import type { PlacedBrick } from './bricks';
 
-export type Mode = 'free' | 'instructions';
+export type Mode = 'free' | 'instructions' | 'mosaic';
 
 export interface Booklet {
   name: string;
@@ -24,6 +24,14 @@ export interface Project {
   /** page count of the current booklet */
   pageCount: number;
   thumbnail?: string;
+  /** mosaic: the parts for each build step */
+  steps?: PlacedBrick[][];
+  /** mosaic: current step index */
+  step?: number;
+  /** mosaic: look of the parts, used for the step preview */
+  mosaicStyle?: 'round' | 'tile' | 'plate';
+  /** mosaic: small copy of the source picture */
+  source?: string;
   createdAt: number;
   updatedAt: number;
 }
