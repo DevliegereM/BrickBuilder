@@ -1,12 +1,13 @@
 {
   "name": "brick-builder",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:standalone": "vite build --config vite.standalone.config.ts && cp dist-standalone/index.html BrickBuilder.html"
   },
   "dependencies": {
     "idb-keyval": "^6.3.0",

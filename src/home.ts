@@ -2,6 +2,7 @@ import { type PlacedBrick, TYPE_BY_ID, COLOR_BY_ID } from './bricks';
 import { INSTRUCTIONS_URL, isPdf, openImportDialog } from './importDialog';
 import { type Project, deleteProject, listProjects, newId, saveProject } from './storage';
 import { h, icon, iconButton, timeAgo, toast } from './ui';
+import logoUrl from '../public/icon.svg?url';
 
 const go = (id: string) => (location.hash = `#/build/${id}`);
 
@@ -137,7 +138,7 @@ export async function renderHome(app: HTMLElement): Promise<() => void> {
     h(
       'main',
       { class: 'home' },
-      h('header', { class: 'hero' }, h('img', { src: 'icon.svg', alt: '', class: 'logo' }), h('h1', {}, 'Brick Builder')),
+      h('header', { class: 'hero' }, h('img', { src: logoUrl, alt: '', class: 'logo' }), h('h1', {}, 'Brick Builder')),
       h('section', { class: 'modes' }, setCard, freeCard),
       h(
         'p',

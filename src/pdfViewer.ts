@@ -1,7 +1,7 @@
 import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { setupPdfWorker } from './pdfWorker';
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+setupPdfWorker(pdfjs.GlobalWorkerOptions);
 
 export async function countPages(data: Blob): Promise<number> {
   const task = pdfjs.getDocument({ data: new Uint8Array(await data.arrayBuffer()) });

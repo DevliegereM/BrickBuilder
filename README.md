@@ -2,7 +2,19 @@
 
 A browser game for building brick sets in an isometric 3D view. You can rebuild a real set from its official instruction PDFs, or build freely on an empty baseplate.
 
-It runs in Safari on iOS, iPadOS and macOS 26, and in Chrome, Edge and Firefox. Everything stays on your device. There is no account and no server.
+It runs in Safari on macOS 26, and in Chrome, Edge and Firefox. Everything stays on your device. There is no account and no server.
+
+## How to play
+
+No installation needed.
+
+1. On GitHub, click **Code → Download ZIP**.
+2. Unzip the file.
+3. Double-click **`BrickBuilder.html`**.
+
+The game opens in your browser and works offline. `BrickBuilder.html` is the whole game in one file, so you can also copy that file on its own to another computer or a USB stick.
+
+> Your builds are saved in the browser you opened the file with, for that file's location. If you move the file or use another browser, you start with an empty list. Use **••• → Export build** to take a build with you.
 
 ## Game modes
 
@@ -58,11 +70,10 @@ All parts come in 23 colors, including 3 transparent ones, and rotate in four di
 - **••• → Export build** saves a `.brickbuild.json` file. Use **Import a build file** on the home screen, or drag the file onto it, to open it on another device.
 - **••• → Save image** saves a picture of your build.
 - **Parts list** counts every part by color and type.
-- On iPhone and iPad, choose **Share → Add to Home Screen** to open it full screen like an app.
 
 ## Development
 
-Requires Node 22 or newer.
+Only needed if you want to change the code. Requires Node 22 or newer.
 
 ```sh
 npm install
@@ -93,9 +104,15 @@ Stack: TypeScript, Vite, Three.js, pdf.js, idb-keyval.
 
 The baseplate is a 48×48 stud grid. Heights are counted in plate layers, and a brick is 3 plates tall. The game records which cells every placed part fills. When you place a part, it lands on top of whatever you are pointing at and moves up until it no longer overlaps anything.
 
-### Deploying
+### Updating BrickBuilder.html
 
-`.github/workflows/deploy.yml` builds the game and publishes `dist/` to GitHub Pages whenever `main` is pushed. To enable it, go to **Settings → Pages** and set the source to **GitHub Actions**.
+`BrickBuilder.html` is generated. After changing the source, rebuild it and commit the result:
+
+```sh
+npm run build:standalone
+```
+
+This bundles the game, Three.js, pdf.js (including its worker), the styles and the icon into a single file that runs from `file://`. The settings are in `vite.standalone.config.ts`. `npm run build` still produces the normal multi-file web build in `dist/` for hosting on a web server.
 
 ## Disclaimer
 
