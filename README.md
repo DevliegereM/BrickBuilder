@@ -25,15 +25,18 @@ An empty 48×48 baseplate with the full parts catalog.
 
 ## Parts
 
-| Category | Parts |
-| --- | --- |
-| Bricks | 1×1 to 1×8, 2×2 to 2×8 |
-| Plates | 1×1 to 1×8, 2×2 to 2×8, 4×4, 4×6, 6×6, 6×8 |
-| Tiles | 1×1 to 1×6, 2×2, 2×4 |
-| Slopes | 45° 2×1, 2×2, 2×4 · 33° 3×1, 3×2, 3×4 · 30° 1×1 (cheese), 1×2 · inverted 45° 2×1, 2×2 |
-| Round | round brick 1×1 and 2×2, round plate 1×1 and 2×2, round tile 1×1 and 2×2, cone 1×1 |
+Free Build gives you an **unlimited supply of every part**, in the official sizes. There are 108 parts in 5 categories:
 
-All parts come in 23 colors, including 3 transparent ones. Parts rotate in four directions, so slopes can face any way.
+| Category | Sizes |
+| --- | --- |
+| Bricks (19) | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8, 1×10, 1×12, 1×16 · 2×2, 2×3, 2×4, 2×6, 2×8, 2×10 · 4×6, 4×10, 4×12, 4×18 |
+| Tall bricks (8) | 1×1×3, 1×1×5, 1×2×2, 1×2×3, 1×2×5, 1×4×3, 1×6×5, 2×2×3 |
+| Plates (33) | 1×1 to 1×12 · 2×2 to 2×16 · 3×3 · 4×4 to 4×12 · 6×6 to 6×16, 6×24 · 8×8, 8×16 · 16×16 |
+| Tiles (12) | 1×1, 1×2, 1×3, 1×4, 1×6, 1×8 · 2×2, 2×3, 2×4, 2×6 · 6×6 · 8×16 |
+| Slopes (21) | 45° 2×1, 2×2, 2×3, 2×4 · 33° 3×1, 3×2, 3×3, 3×4 · 18° 4×1, 4×2 · 65° 2×1×2, 2×2×2 · 75° 2×1×3, 2×2×3 · 30° 1×1 (cheese), 1×2 · inverted 45° 2×1, 2×2 · inverted 33° 3×1, 3×2 · inverted 75° 2×1×3 |
+| Round (15) | round brick 1×1, 2×2, 4×4 · round plate 1×1, 2×2, 4×4, 6×6, 8×8 · round tile 1×1, 2×2, 3×3, 4×4 · cone 1×1, 2×2×2, 4×4×2 |
+
+All parts come in 23 colors, including 3 transparent ones, and rotate in four directions. To find a part quickly, type a size such as `2x4` or a name such as `cone` in the palette filter. The filter searches every category.
 
 ## Controls
 
@@ -46,6 +49,7 @@ All parts come in 23 colors, including 3 transparent ones. Parts rotate in four 
 | Pan / zoom | Middle-drag / scroll | Two-finger drag / pinch |
 | Undo / redo | `⌘Z` / `⇧⌘Z` | Top bar |
 | Instruction pages | `←` `→` | Swipe |
+| Clear the part filter | `Esc` | Clear button |
 | Show or hide instructions | `I` | Book button |
 
 ## Saving and sharing

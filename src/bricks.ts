@@ -50,17 +50,21 @@ export interface PlacedBrick {
   r: Rotation;
 }
 
-const box = (category: 'brick' | 'plate' | 'tile', w: number, d: number): BrickType => ({
-  id: `${category}-${w}x${d}`,
-  category,
-  shape: 'box',
-  w,
-  d,
-  layers: category === 'brick' ? BRICK_LAYERS : 1,
-  studs: category !== 'tile',
-  label: `${w}×${d}`,
-  name: `${category} ${w}×${d}`,
-});
+/** Rectangular part. `tall` is the height in bricks for tall bricks (1×2×2 etc). */
+const box = (category: 'brick' | 'plate' | 'tile', w: number, d: number, tall = 1): BrickType => {
+  const size = tall > 1 ? `${w}×${d}×${tall}` : `${w}×${d}`;
+  return {
+    id: tall > 1 ? `${category}-${w}x${d}x${tall}` : `${category}-${w}x${d}`,
+    category,
+    shape: 'box',
+    w,
+    d,
+    layers: category === 'brick' ? BRICK_LAYERS * tall : 1,
+    studs: category !== 'tile',
+    label: size,
+    name: `${category} ${size}`,
+  };
+};
 
 const slope = (
   id: string,
@@ -95,29 +99,75 @@ const round = (id: string, label: string, name: string, w: number, layers: numbe
   name,
 });
 
-export const BRICK_TYPES: BrickType[] = [
-  ...([[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [1, 8], [2, 2], [2, 3], [2, 4], [2, 6], [2, 8]] as const).map(([w, d]) => box('brick', w, d)),
-  ...([[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [1, 8], [2, 2], [2, 3], [2, 4], [2, 6], [2, 8], [4, 4], [4, 6], [6, 6], [6, 8]] as const).map(([w, d]) => box('plate', w, d)),
-  ...([[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [2, 2], [2, 4]] as const).map(([w, d]) => box('tile', w, d)),
+type Size = readonly [number, number];
+const sizes = (list: readonly Size[], make: (w: number, d: number) => BrickType) => list.map(([w, d]) => make(w, d));
 
+/** Official part sizes. Free Build has an unlimited supply of every part. */
+export const BRICK_TYPES: BrickType[] = [
+  // Bricks
+  ...sizes(
+    [[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [1, 8], [1, 10], [1, 12], [1, 16],
+     [2, 2], [2, 3], [2, 4], [2, 6], [2, 8], [2, 10], [4, 6], [4, 10], [4, 12], [4, 18]],
+    (w, d) => box('brick', w, d),
+  ),
+  // Tall bricks: [w, d, height in bricks]
+  ...([[1, 1, 3], [1, 1, 5], [1, 2, 2], [1, 2, 3], [1, 2, 5], [1, 4, 3], [1, 6, 5], [2, 2, 3]] as const).map(([w, d, t]) => box('brick', w, d, t)),
+
+  // Plates
+  ...sizes(
+    [[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [1, 8], [1, 10], [1, 12],
+     [2, 2], [2, 3], [2, 4], [2, 6], [2, 8], [2, 10], [2, 12], [2, 14], [2, 16],
+     [3, 3], [4, 4], [4, 6], [4, 8], [4, 10], [4, 12],
+     [6, 6], [6, 8], [6, 10], [6, 12], [6, 14], [6, 16], [6, 24],
+     [8, 8], [8, 16], [16, 16]],
+    (w, d) => box('plate', w, d),
+  ),
+
+  // Tiles
+  ...sizes(
+    [[1, 1], [1, 2], [1, 3], [1, 4], [1, 6], [1, 8], [2, 2], [2, 3], [2, 4], [2, 6], [6, 6], [8, 16]],
+    (w, d) => box('tile', w, d),
+  ),
+
+  // Slopes: w = width across, d = run (studs along the slope)
   slope('slope45-2x1', '45° 2×1', 'slope 45° 2×1', 1, 2),
   slope('slope45-2x2', '45° 2×2', 'slope 45° 2×2', 2, 2),
+  slope('slope45-2x3', '45° 2×3', 'slope 45° 2×3', 3, 2),
   slope('slope45-2x4', '45° 2×4', 'slope 45° 2×4', 4, 2),
   slope('slope33-3x1', '33° 3×1', 'slope 33° 3×1', 1, 3),
   slope('slope33-3x2', '33° 3×2', 'slope 33° 3×2', 2, 3),
+  slope('slope33-3x3', '33° 3×3', 'slope 33° 3×3', 3, 3),
   slope('slope33-3x4', '33° 3×4', 'slope 33° 3×4', 4, 3),
+  slope('slope18-4x1', '18° 4×1', 'slope 18° 4×1', 1, 4),
+  slope('slope18-4x2', '18° 4×2', 'slope 18° 4×2', 2, 4),
+  slope('slope65-2x1x2', '65° 2×1×2', 'slope 65° 2×1×2', 1, 2, { layers: BRICK_LAYERS * 2 }),
+  slope('slope65-2x2x2', '65° 2×2×2', 'slope 65° 2×2×2', 2, 2, { layers: BRICK_LAYERS * 2 }),
+  slope('slope75-2x1x3', '75° 2×1×3', 'slope 75° 2×1×3', 1, 2, { layers: BRICK_LAYERS * 3 }),
+  slope('slope75-2x2x3', '75° 2×2×3', 'slope 75° 2×2×3', 2, 2, { layers: BRICK_LAYERS * 3 }),
   slope('slope30-1x1', 'Cheese', 'slope 30° 1×1 (cheese)', 1, 1, { flat: 0, layers: 2, lip: 0.05 }),
   slope('slope30-2x1', '30° 1×2', 'slope 30° 1×2 (2 plates)', 1, 2, { flat: 0, layers: 2, lip: 0.05 }),
-  slope('slope45inv-2x1', 'Inv 2×1', 'inverted slope 45° 2×1', 1, 2, { inverted: true }),
-  slope('slope45inv-2x2', 'Inv 2×2', 'inverted slope 45° 2×2', 2, 2, { inverted: true }),
+  slope('slope45inv-2x1', 'Inv 45° 2×1', 'inverted slope 45° 2×1', 1, 2, { inverted: true }),
+  slope('slope45inv-2x2', 'Inv 45° 2×2', 'inverted slope 45° 2×2', 2, 2, { inverted: true }),
+  slope('slope33inv-3x1', 'Inv 33° 3×1', 'inverted slope 33° 3×1', 1, 3, { inverted: true }),
+  slope('slope33inv-3x2', 'Inv 33° 3×2', 'inverted slope 33° 3×2', 2, 3, { inverted: true }),
+  slope('slope75inv-2x1x3', 'Inv 75° 2×1×3', 'inverted slope 75° 2×1×3', 1, 2, { inverted: true, layers: BRICK_LAYERS * 3 }),
 
+  // Round parts
   round('round-brick-1x1', 'Brick 1×1', 'round brick 1×1', 1, BRICK_LAYERS),
   round('round-brick-2x2', 'Brick 2×2', 'round brick 2×2', 2, BRICK_LAYERS),
+  round('round-brick-4x4', 'Brick 4×4', 'round brick 4×4', 4, BRICK_LAYERS),
   round('round-plate-1x1', 'Plate 1×1', 'round plate 1×1', 1, 1),
   round('round-plate-2x2', 'Plate 2×2', 'round plate 2×2', 2, 1),
+  round('round-plate-4x4', 'Plate 4×4', 'round plate 4×4', 4, 1),
+  round('round-plate-6x6', 'Plate 6×6', 'round plate 6×6', 6, 1),
+  round('round-plate-8x8', 'Plate 8×8', 'round plate 8×8', 8, 1),
   round('round-tile-1x1', 'Tile 1×1', 'round tile 1×1', 1, 1, { studs: false }),
   round('round-tile-2x2', 'Tile 2×2', 'round tile 2×2', 2, 1, { studs: false }),
+  round('round-tile-3x3', 'Tile 3×3', 'round tile 3×3', 3, 1, { studs: false }),
+  round('round-tile-4x4', 'Tile 4×4', 'round tile 4×4', 4, 1, { studs: false }),
   round('cone-1x1', 'Cone 1×1', 'cone 1×1', 1, BRICK_LAYERS, { cone: true }),
+  round('cone-2x2x2', 'Cone 2×2×2', 'cone 2×2×2', 2, BRICK_LAYERS * 2, { cone: true }),
+  round('cone-4x4x2', 'Cone 4×4×2', 'cone 4×4×2', 4, BRICK_LAYERS * 2, { cone: true }),
 ];
 
 export const TYPE_BY_ID = new Map(BRICK_TYPES.map((t) => [t.id, t]));
@@ -234,21 +284,24 @@ export function brickGeometry(t: BrickType): THREE.BufferGeometry {
     }
     case 'round': {
       const r = t.w / 2 - GAP;
-      const body = new THREE.CylinderGeometry(r, r, h, SEG * t.w);
+      const body = new THREE.CylinderGeometry(r, r, h, Math.min(SEG * t.w, 72));
       body.translate(t.w / 2, h / 2, t.d / 2);
       parts.push(body);
       if (t.studs) {
-        if (t.w === 1) parts.push(stud(0.5, h, 0.5));
-        else for (let i = 0; i < t.w; i++) for (let j = 0; j < t.d; j++) parts.push(stud(i + 0.5, h, j + 0.5));
+        // Small round parts carry every stud; larger ones only those inside the circle.
+        const c = t.w / 2;
+        for (let i = 0; i < t.w; i++)
+          for (let j = 0; j < t.d; j++)
+            if (t.w <= 2 || Math.hypot(i + 0.5 - c, j + 0.5 - c) + STUD_R <= r) parts.push(stud(i + 0.5, h, j + 0.5));
       }
       break;
     }
     case 'cone': {
-      const top = 0.26;
-      const body = new THREE.CylinderGeometry(top, t.w / 2 - GAP, h, SEG);
+      const top = t.w === 1 ? 0.26 : t.w / 4;
+      const body = new THREE.CylinderGeometry(top, t.w / 2 - GAP, h, Math.min(SEG * t.w, 72));
       body.translate(t.w / 2, h / 2, t.d / 2);
       parts.push(body);
-      parts.push(stud(t.w / 2, h, t.d / 2, 0.22));
+      parts.push(stud(t.w / 2, h, t.d / 2, t.w === 1 ? 0.22 : STUD_R));
       break;
     }
   }

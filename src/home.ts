@@ -79,7 +79,7 @@ export async function renderHome(app: HTMLElement): Promise<() => void> {
     { class: 'mode-card mode-free', onclick: (() => void createFree()) as EventListener },
     h('div', { class: 'mode-art' }, icon('build')),
     h('h2', {}, 'Free Build'),
-    h('p', {}, 'An empty 48×48 baseplate with bricks, plates, tiles, slopes and round parts.'),
+    h('p', {}, 'An empty 48×48 baseplate and an unlimited supply of every part, in all official sizes.'),
     h('span', { class: 'mode-cta' }, icon('plus'), 'New build'),
   );
 

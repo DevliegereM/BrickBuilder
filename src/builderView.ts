@@ -93,33 +93,59 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
   stage.append(toolbar, viewControls, countEl);
 
   // --- palette ---
-  const typeBtns = new Map<string, { btn: HTMLButtonElement; img: HTMLImageElement }>();
+  const typeBtns = new Map<string, { btn: HTMLButtonElement; img: HTMLImageElement; caption: HTMLSpanElement }>();
   const colorBtns = new Map<string, HTMLButtonElement>();
   const catTabs = new Map<Category, HTMLButtonElement>();
   const partsRow = h('div', { class: 'parts-row' });
   const colorsRow = h('div', { class: 'colors-row' });
   let activeCat: Category = 'brick';
 
-  // Part icons are rendered in the current colour, only for the visible tab.
+  const filterInput = h('input', {
+    type: 'search',
+    class: 'part-filter',
+    placeholder: 'e.g. 2x4',
+    'aria-label': 'Filter parts by size or name',
+    autocomplete: 'off',
+    enterkeyhint: 'done',
+  }) as HTMLInputElement;
+  const noMatch = h('p', { class: 'no-match', hidden: true }, 'No parts match');
+  const normalize = (v: string) => v.toLowerCase().replace(/\s+/g, '').replace(/[x*]/g, '×');
+
+  // Part icons are rendered in the current colour, only for visible tiles.
   const refreshIcons = () => {
-    for (const [id, { img }] of typeBtns) {
+    for (const [id, { btn, img }] of typeBtns) if (!btn.hidden) img.src = partIcons.get(TYPE_BY_ID.get(id)!, builder.colorId);
+  };
+
+  /** A filter searches every category; otherwise the active tab is shown. */
+  const applyVisibility = () => {
+    const q = normalize(filterInput.value);
+    let shown = 0;
+    for (const [id, { btn, caption }] of typeBtns) {
       const t = TYPE_BY_ID.get(id)!;
-      if (t.category === activeCat) img.src = partIcons.get(t, builder.colorId);
+      btn.hidden = q ? !normalize(`${t.label} ${t.name}`).includes(q) : t.category !== activeCat;
+      // Search results mix categories, so say which one a plain size belongs to.
+      caption.textContent = q && t.shape === 'box' ? `${t.category[0].toUpperCase()}${t.category.slice(1)} ${t.label}` : t.label;
+      if (!btn.hidden) shown++;
     }
+    partsRow.scrollLeft = 0;
+    tabs.classList.toggle('filtering', !!q);
+    noMatch.hidden = shown > 0;
+    refreshIcons();
   };
 
   const showCategory = (c: Category) => {
     activeCat = c;
+    filterInput.value = '';
     for (const [id, b] of catTabs) b.setAttribute('aria-selected', String(id === c));
-    for (const [id, { btn }] of typeBtns) btn.hidden = TYPE_BY_ID.get(id)!.category !== c;
-    refreshIcons();
+    applyVisibility();
   };
+  filterInput.addEventListener('input', applyVisibility);
 
   function selectType(id: string) {
     builder.setBrush(id, builder.colorId);
     for (const [tid, { btn }] of typeBtns) btn.classList.toggle('active', tid === id);
     const c = TYPE_BY_ID.get(id)!.category;
-    if (c !== activeCat) showCategory(c);
+    if (c !== activeCat && !filterInput.value) showCategory(c);
     typeBtns.get(id)?.btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
@@ -137,8 +163,9 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
   }
   for (const t of BRICK_TYPES) {
     const img = h('img', { alt: '', width: 56, height: 56, draggable: 'false' }) as HTMLImageElement;
-    const btn = h('button', { class: 'part-btn', title: t.name, 'aria-label': t.name, onclick: (() => selectType(t.id)) as EventListener }, img, h('span', {}, t.label));
-    typeBtns.set(t.id, { btn, img });
+    const caption = h('span', {}, t.label);
+    const btn = h('button', { class: 'part-btn', title: t.name, 'aria-label': t.name, onclick: (() => selectType(t.id)) as EventListener }, img, caption);
+    typeBtns.set(t.id, { btn, img, caption });
     partsRow.append(btn);
   }
   for (const c of COLORS) {
@@ -146,7 +173,13 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
     colorBtns.set(c.id, b);
     colorsRow.append(b);
   }
-  const palette = h('footer', { class: 'palette' }, h('div', { class: 'palette-top' }, tabs, colorsRow), partsRow);
+  partsRow.append(noMatch);
+  const palette = h(
+    'footer',
+    { class: 'palette' },
+    h('div', { class: 'palette-top' }, tabs, filterInput, colorsRow),
+    partsRow,
+  );
 
   // --- parts list dialog ---
   const partsDialog = h('dialog', { class: 'sheet parts-dialog' });
@@ -343,7 +376,14 @@ export async function renderBuilder(app: HTMLElement, project: Project): Promise
 
   // --- keyboard ---
   const onKey = (e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) {
+      if (e.key === 'Escape' && e.target === filterInput) {
+        filterInput.value = '';
+        applyVisibility();
+        filterInput.blur();
+      }
+      return;
+    }
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === 'z') {
       e.preventDefault();
