@@ -35,6 +35,11 @@ export class PdfViewer {
   }
 
   async open(data: Blob, page: number) {
+    this.task?.cancel();
+    const old = this.loading;
+    this.doc = null;
+    void old?.destroy();
+    this.scroller.scrollTo({ top: 0, left: 0 });
     this.loading = pdfjs.getDocument({ data: new Uint8Array(await data.arrayBuffer()) });
     this.doc = await this.loading.promise;
     this.page = Math.min(Math.max(1, page), this.doc.numPages);

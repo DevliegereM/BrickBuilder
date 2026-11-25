@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
   PLATE_H,
   type PlacedBrick,
+  type Rotation,
   TYPE_BY_ID,
   brickGeometry,
   brickMaterial,
@@ -18,7 +19,7 @@ const ISO_POLAR = Math.acos(1 / Math.sqrt(3)); // true isometric elevation (~54.
 
 interface BuilderEvents {
   onChange: () => void;
-  onPick: (typeId: string, colorId: string, rotated: 0 | 1) => void;
+  onPick: (typeId: string, colorId: string, rotation: Rotation) => void;
   onHistory: (canUndo: boolean, canRedo: boolean) => void;
 }
 
@@ -48,7 +49,7 @@ export class Builder {
   tool: Tool = 'build';
   typeId = 'brick-2x4';
   colorId = 'red';
-  rotated: 0 | 1 = 0;
+  rotated: Rotation = 0;
 
   constructor(private host: HTMLElement, private events: BuilderEvents) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -293,9 +294,8 @@ export class Builder {
   private addBrick(b: PlacedBrick) {
     const t = TYPE_BY_ID.get(b.t);
     if (!t) return;
-    const f = footprint(b);
-    const mesh = new THREE.Mesh(brickGeometry(f.w, f.d, f.layers, t.kind), brickMaterial(b.c));
-    mesh.position.set(b.x - HALF, b.y * PLATE_H, b.z - HALF);
+    const mesh = new THREE.Mesh(brickGeometry(t), brickMaterial(b.c));
+    this.placeMesh(mesh, b);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.brickId = b.id;
@@ -303,6 +303,13 @@ export class Builder {
     this.meshes.set(b.id, mesh);
     this.bricks.set(b.id, b);
     this.forEachCell(b, (k) => void this.occupancy.set(k, b.id));
+  }
+
+  /** Geometry is centered on x/z, so rotate in place and offset to the footprint center. */
+  private placeMesh(mesh: THREE.Object3D, b: Pick<PlacedBrick, 't' | 'r' | 'x' | 'y' | 'z'>) {
+    const f = footprint(b);
+    mesh.position.set(b.x - HALF + f.w / 2, b.y * PLATE_H, b.z - HALF + f.d / 2);
+    mesh.rotation.y = (-b.r * Math.PI) / 2;
   }
 
   private removeBrick(id: number) {
@@ -372,7 +379,7 @@ export class Builder {
   }
 
   rotateBrush() {
-    this.rotated = this.rotated ? 0 : 1;
+    this.rotated = ((this.rotated + 1) % 4) as Rotation;
     this.refreshGhost();
   }
 
@@ -448,11 +455,9 @@ export class Builder {
       this.hideGhost();
       return;
     }
-    const t = TYPE_BY_ID.get(p.t)!;
-    const f = footprint(p);
-    this.ghost.geometry = brickGeometry(f.w, f.d, f.layers, t.kind);
+    this.ghost.geometry = brickGeometry(TYPE_BY_ID.get(p.t)!);
     this.ghostMat.color.set(brickMaterial(p.c).color);
-    this.ghost.position.set(p.x - HALF, p.y * PLATE_H, p.z - HALF);
+    this.placeMesh(this.ghost, p);
     this.ghost.visible = true;
     this.needsRender = true;
   }
